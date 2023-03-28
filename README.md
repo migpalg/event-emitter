@@ -21,7 +21,7 @@ eventEmitter.on("test-event", ({ name }) => {
   console.log(`called event with: ${name}`);
 });
 
-eventEmitter.emit("test-evemt", { name: "John" });
+eventEmitter.emit("test-event", { name: "John" });
 ```
 
 We highly recommend using this package with typescript to describe your own set of events
@@ -38,34 +38,127 @@ const emitter = new EventEmitter<MyEventMap>();
 emitter.emit("push", { target: "hello world!" });
 ```
 
+## ✨ Example usage
+
+If you want to react to an action, you can use event an event emitter to trigger and respond to the target events.
+
+```js
+import { EventEmitter } from "@migpalg/event-emitter";
+
+const target = {
+  emitter: new EventEmitter(),
+  count: 0,
+  add() {
+    this.emitter.emit('add', { sum: ++this.count })
+  }
+}
+
+target.emitter.on('add', ({ sum }) => {
+  // This code will update the element contents every time sum event happens
+  const element document.getElementById('target-element');
+
+  if (element) element.innerText = sum;
+});
+
+target.add();
+target.add();
+target.add(); // Call the listener 3 times
+```
+
 # 🐓 API
 
-## Class: `EventEmitter<EventMap>`
+`IEventEmitter` is an interface that defines the methods of the `EventEmitter` class. This interface is generic and allows to specify the type of the event data.
 
-Class that implements the `IEventEmitter` interface. It allows you to subscribe to events, unsubscribe from events, and emit events. It is generic and allows you to specify the type of the event data.
+## Type definitions
 
-### Type parameters
+### EventListener
 
-- `EventMap`: A mapping of event names to event data types.
+`EventListener` is a type that defines the signature of the event listener callback function. It is generic and allows to specify the type of the event data.
 
-### `on<EventName extends keyof EventMap>(eventName: EventName, listener: EventListener<EventMap[EventName]>): () => void`
+```typescript
+export type EventListener<T> = (data: T) => void;
+```
 
-Subscribe to an event.
+### EventMap
 
-- `eventName`: The target event name.
-- `listener`: A callback function that will be invoked when the event is emitted. The callback function takes the event data as its only parameter.
-- Returns: A function that can be called to unsubscribe from the event.
+`EventMap` is a generic type that defines a map of event names to their corresponding event data types.
 
-### `off<EventName extends keyof EventMap>(eventName: EventName, listener: EventListener<EventMap[EventName]>): void`
+## Methods
 
-Unsubscribe from an event.
+### on
 
-- `eventName`: The target event name.
-- `listener`: The callback function that was previously subscribed to the event.
+Subscribe to an event
 
-### `emit<EventName extends keyof EventMap>(eventName: EventName, data: EventMap[EventName]): void`
+```typescript
+on<EventName extends keyof EventMap>(
+  eventName: EventName,
+  listener: EventListener<EventMap[EventName]>
+): () => void;
+```
 
-Emit an event.
+- `eventName`: target event name.
+- `listener`: callback function.
+- Returns: a function that can be called to unsubscribe from the event.
 
-- `eventName`: The target event name.
-- `data`: The event data to be passed to the listeners. It must match the type specified in the `EventMap` for the target event.
+### once
+
+Subscribe to an event and unsubscribe after the first call
+
+```typescript
+once<EventName extends keyof EventMap>(
+  eventName: EventName,
+  listener: EventListener<EventMap[EventName]>
+): void;
+```
+
+- `eventName`: target event name.
+- `listener`: callback function.
+
+### off
+
+Unsubscribe from an event
+
+```typescript
+off<EventName extends keyof EventMap>(
+  eventName: EventName,
+  listener: EventListener<EventMap[EventName]>
+): void;
+```
+
+- `eventName`: target event name.
+- `listener`: callback function.
+
+### emit
+
+Emit an event
+
+```typescript
+emit<EventName extends keyof EventMap>(
+  eventName: EventName,
+  data: EventMap[EventName]
+): void;
+```
+
+- `eventName`: target event name.
+- `data`: event data to be passed to the listeners.
+
+### getMaxListeners
+
+Get the number of listeners for the events
+
+```typescript
+getMaxListeners(): number;
+```
+
+- Returns: the number of listeners for the events.
+
+### setMaxListeners
+
+Set the maximum number of listeners for the events
+
+```typescript
+setMaxListeners(maxListeners: number): void;
+```
+
+- `maxListeners`: maximum number of listeners for an event.
+- Throws: if the maximum number of listeners is less than 1.
