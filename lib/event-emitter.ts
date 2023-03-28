@@ -1,45 +1,4 @@
-/**
- * Type that defines the signature of the event listener callback function. It
- * is generic and allows to specify the type of the event data.
- */
-export type EventListener<T> = (data: T) => void;
-
-/**
- * Interface that defines the methods of the EventEmitter class. It is generic
- * and allows to specify the type of the event data.
- */
-export interface IEventEmitter<EventMap> {
-  /**
-   * Subscribe to an event
-   * @param eventName target event name
-   * @param listener callback function
-   * @returns a function that can be called to unsubscribe from the event
-   */
-  on<EventName extends keyof EventMap>(
-    eventName: EventName,
-    listener: EventListener<EventMap[EventName]>
-  ): () => void;
-
-  /**
-   * Unsubscribe from an event
-   * @param eventName target event name
-   * @param listener callback function
-   */
-  off<EventName extends keyof EventMap>(
-    eventName: EventName,
-    listener: EventListener<EventMap[EventName]>
-  ): void;
-
-  /**
-   * Emit an event
-   * @param eventName target event name
-   * @param data event data to be passed to the listeners
-   */
-  emit<EventName extends keyof EventMap>(
-    eventName: EventName,
-    data: EventMap[EventName]
-  ): void;
-}
+import { IEventEmitter, EventListener, DEFAULT_MAX_LISTENERS } from "./types";
 
 /**
  * Class that implements the IEventEmitter interface. It allows to subscribe to
@@ -49,18 +8,30 @@ export interface IEventEmitter<EventMap> {
 export class EventEmitter<EventMap = unknown>
   implements IEventEmitter<EventMap>
 {
+  private maxListeners: number = DEFAULT_MAX_LISTENERS;
+
   // Map of event names to a set of listeners
   private listeners: Map<
     keyof EventMap,
     Set<EventListener<EventMap[keyof EventMap]>>
   > = new Map();
 
-  public on<EventName extends keyof EventMap>(
+  on<EventName extends keyof EventMap>(
     eventName: EventName,
     listener: EventListener<EventMap[EventName]>
   ): () => void {
     if (!this.listeners.has(eventName)) {
       this.listeners.set(eventName, new Set());
+    }
+
+    if (this.listeners.get(eventName)!.size >= this.maxListeners) {
+      // TODO: use a logger instead of console
+      // TODO: use a custom error class with custom error codes
+      console.warn(
+        "Possible EventEmitter memory leak detected. " +
+          `${this.maxListeners} ${eventName as string} listeners added.` +
+          "Use emitter.setMaxListeners() to increase limit"
+      );
     }
 
     const listeners = this.listeners.get(eventName) as Set<
@@ -74,7 +45,17 @@ export class EventEmitter<EventMap = unknown>
     };
   }
 
-  public off<EventName extends keyof EventMap>(
+  once<EventName extends keyof EventMap>(
+    eventName: EventName,
+    listener: EventListener<EventMap[EventName]>
+  ): void {
+    const off = this.on(eventName, (data) => {
+      listener(data);
+      off();
+    });
+  }
+
+  off<EventName extends keyof EventMap>(
     eventName: EventName,
     listener: EventListener<EventMap[EventName]>
   ): void {
@@ -89,7 +70,7 @@ export class EventEmitter<EventMap = unknown>
     listeners.delete(listener);
   }
 
-  public emit<EventName extends keyof EventMap>(
+  emit<EventName extends keyof EventMap>(
     eventName: EventName,
     data: EventMap[EventName]
   ): void {
@@ -102,5 +83,17 @@ export class EventEmitter<EventMap = unknown>
     >;
 
     listeners.forEach((listener) => listener(data));
+  }
+
+  getMaxListeners(): number {
+    return this.maxListeners;
+  }
+
+  setMaxListeners(maxListeners: number): void {
+    if (typeof maxListeners !== "number" || maxListeners < 1) {
+      throw new Error("maxListeners must be a positive number");
+    }
+
+    this.maxListeners = maxListeners;
   }
 }
