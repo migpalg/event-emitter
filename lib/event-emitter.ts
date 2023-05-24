@@ -34,9 +34,7 @@ export class EventEmitter<EventMap = unknown>
       );
     }
 
-    const listeners = this.listeners.get(eventName) as Set<
-      EventListener<EventMap[EventName]>
-    >;
+    const listeners = this.listeners.get(eventName);
 
     listeners.add(listener);
 
@@ -95,5 +93,21 @@ export class EventEmitter<EventMap = unknown>
     }
 
     this.maxListeners = maxListeners;
+  }
+
+  removeAllListeners<EventName extends keyof EventMap>(
+    eventName: EventName
+  ): void {
+    this.listeners.delete(eventName);
+  }
+
+  listenerCount<EventName extends keyof EventMap>(
+    eventName: EventName
+  ): number {
+    return this.listeners.get(eventName)?.size || 0;
+  }
+
+  eventNames(): (keyof EventMap)[] {
+    return Array.from(this.listeners?.keys() || []);
   }
 }
