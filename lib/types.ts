@@ -53,6 +53,25 @@ export interface IEventEmitter<EventMap> {
   ): void;
 
   /**
+   * Get the number of listeners for an event
+   * @param eventName target event name
+   */
+  listenerCount<EventName extends keyof EventMap>(eventName: EventName): number;
+
+  /**
+   * Remove all listeners for an event
+   * @param eventName target event name
+   */
+  removeAllListeners<EventName extends keyof EventMap>(
+    eventName: EventName
+  ): void;
+
+  /**
+   * Get the list of event names that have listeners
+   */
+  eventNames(): Array<keyof EventMap>;
+
+  /**
    * Get the number of listeners for the events
    */
   getMaxListeners(): number;
